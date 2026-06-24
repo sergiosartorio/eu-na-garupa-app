@@ -1,0 +1,121 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body {
+    @apply bg-asphalt-900 text-asphalt-50 antialiased;
+    overscroll-behavior-y: none;
+  }
+
+  body {
+    font-family: theme('fontFamily.sans');
+    /* Suaviza a renderização dos textos em mobile */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* Respeita safe area do iPhone */
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Display font para títulos */
+  h1,
+  h2,
+  h3,
+  .display {
+    font-family: theme('fontFamily.display');
+    letter-spacing: 0.02em;
+  }
+
+  /* Input/select estilos base, para sobrescrever apenas onde necessário */
+  input,
+  select,
+  textarea,
+  button {
+    font-family: inherit;
+  }
+
+  button {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+@layer components {
+  /* Botão principal (CTA grande) */
+  .btn-primary {
+    @apply relative inline-flex items-center justify-center gap-2 
+           bg-signal text-asphalt-900 font-bold uppercase tracking-wider
+           px-6 py-4 rounded-xl
+           transition-all duration-150
+           active:scale-[0.98] active:bg-signal-dark
+           disabled:opacity-50 disabled:pointer-events-none;
+    font-family: theme('fontFamily.display');
+    font-size: 1.25rem;
+    letter-spacing: 0.08em;
+  }
+
+  /* Botão secundário (outline) */
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2
+           bg-transparent text-asphalt-100 font-medium
+           border border-asphalt-500 px-5 py-3 rounded-xl
+           transition-all duration-150
+           active:scale-[0.98] active:bg-asphalt-700;
+  }
+
+  /* Card padrão (passagens, listas) */
+  .card {
+    @apply bg-asphalt-800 border border-asphalt-700 rounded-2xl p-5;
+  }
+
+  /* Card "pronto" — destacado em verde */
+  .card-pronto {
+    @apply bg-gradient-to-br from-liberated/15 to-asphalt-800 
+           border border-liberated/40 rounded-2xl p-5;
+  }
+
+  /* Card "aguardando" — discreto, com pulse sutil */
+  .card-aguardando {
+    @apply bg-asphalt-800 border border-asphalt-700 rounded-2xl p-5
+           opacity-90;
+  }
+
+  /* Faixa de sinalização rodoviária — usada como divider */
+  .road-stripe {
+    background-image: linear-gradient(
+      90deg,
+      theme('colors.signal.DEFAULT') 0 12px,
+      transparent 12px 24px
+    );
+    background-size: 24px 100%;
+    height: 4px;
+  }
+
+  /* Label de status (badge) */
+  .badge {
+    @apply inline-flex items-center gap-1.5 text-xs font-bold uppercase 
+           tracking-wider px-2.5 py-1 rounded-full;
+  }
+
+  .badge-pronto {
+    @apply bg-liberated/20 text-liberated-light border border-liberated/40;
+  }
+
+  .badge-aguardando {
+    @apply bg-signal/15 text-signal border border-signal/30;
+  }
+}
+
+/* Scrollbar discreto em desktop */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: theme('colors.asphalt.900');
+}
+::-webkit-scrollbar-thumb {
+  background: theme('colors.asphalt.600');
+  border-radius: 4px;
+}
