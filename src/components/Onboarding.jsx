@@ -78,7 +78,7 @@ export default function Onboarding({ perfilInicial, onSalvar }) {
         <p className="font-display text-2xl tracking-widest text-signal mb-1">
           EU NA GARUPA
         </p>
-        <h1 className="text-3xl">SUA MOTO EM 10 SEGUNDOS</h1>
+        <h1 className="text-3xl">CADASTRE SUA MOTO</h1>
       </header>
 
       <main className="flex-1 px-5 pb-32 overflow-y-auto space-y-7">
