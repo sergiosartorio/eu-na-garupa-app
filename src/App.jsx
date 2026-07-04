@@ -106,7 +106,6 @@ export default function App() {
       handleAbrirPassagem(checkIn);
     }
   };
-
   const handleAtualizarStatus = (id, patch) => {
     const lista = storageUpdateCheckIn(id, patch);
     setCheckIns(lista);
@@ -114,3 +113,58 @@ export default function App() {
 
   const handleRemoverPassagem = (id) => {
     const lista = storageRemoveCheckIn(id);
+    setCheckIns(lista);
+    setTela('home');
+  };
+
+  if (tela === 'onboarding' || !perfil) {
+    return <Onboarding perfilInicial={perfil} onSalvar={handleSalvarPerfil} />;
+  }
+
+  return (
+    <>
+      <Home
+        perfil={perfil}
+        checkIns={checkIns}
+        loadingEventos={loadingEventos}
+        erroEventos={erroEventos}
+        onNovoCheckIn={() => setTela('checkin')}
+        onAbrirPassagem={handleAbrirPassagem}
+        onVerAmostras={handleVerAmostras}
+        onAbrirSettings={() => setTela('settings')}
+        onRecarregar={recarregarEventos}
+      />
+
+      {tela === 'checkin' && (
+        <CheckInModal
+          onFechar={() => setTela('home')}
+          onConfirmar={handleAdicionarCheckIn}
+        />
+      )}
+
+      {tela === 'passagem' && passagemSelecionada && (
+        <PassagemDetail
+          passagem={
+            checkIns.find((c) => c.id === passagemSelecionada.id) ||
+            passagemSelecionada
+          }
+          perfil={perfil}
+          onFechar={() => setTela('home')}
+          onRemover={handleRemoverPassagem}
+          onAtualizarStatus={handleAtualizarStatus}
+        />
+      )}
+
+      {tela === 'settings' && (
+        <Settings
+          perfil={perfil}
+          onFechar={() => setTela('home')}
+          onSalvar={(p) => {
+            setPerfil(p);
+            setTela('home');
+          }}
+        />
+      )}
+    </>
+  );
+}
