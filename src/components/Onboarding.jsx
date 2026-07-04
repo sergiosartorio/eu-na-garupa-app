@@ -1,3 +1,4 @@
+import { track } from '../lib/analytics.js';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { MARCAS } from '../data/marcas.js';
 import { CORES } from '../data/cores.js';
@@ -67,7 +68,7 @@ export default function Onboarding({ perfilInicial, onSalvar }) {
       cor,
       atualizadoEm: new Date().toISOString()
     };
-    savePerfil(perfil);
+    savePerfil(perfil);track.perfilCriado(perfil.marca, perfil.modelo);
     onSalvar(perfil);
   }
 

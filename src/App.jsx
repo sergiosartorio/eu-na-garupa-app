@@ -11,6 +11,7 @@ import {
 import { fetchEventosPublicados } from './lib/api.js';
 import { atualizarStatusCheckIns } from './lib/matching.js';
 import { montarUrlSofoto } from './lib/urlBuilder.js';
+import { iniciarSessao, track } from './lib/analytics.js';
 
 import Onboarding from './components/Onboarding.jsx';
 import Home from './components/Home.jsx';
@@ -30,6 +31,7 @@ export default function App() {
 
   // Carrega perfil + check-ins do localStorage no primeiro mount
   useEffect(() => {
+    iniciarSessao();
     const p = getPerfil();
     const cs = getCheckIns();
     setPerfil(p);
@@ -85,6 +87,7 @@ export default function App() {
     const atualizados = atualizarStatusCheckIns(lista, eventos);
     saveCheckIns(atualizados);
     setCheckIns(atualizados);
+    track.checkinFeito(dados.localId);
     setTela('home');
   };
 
@@ -97,89 +100,4 @@ export default function App() {
   // pulando a tela de detalhe.
   const handleVerAmostras = (checkIn) => {
     if (checkIn.status !== 'pronto') {
-      // Por segurança: se não estiver pronto, cai na tela de detalhe.
-      handleAbrirPassagem(checkIn);
-      return;
-    }
-    const url = montarUrlSofoto({
-      localId: checkIn.localId,
-      data: checkIn.data,
-      perfil,
-      hora: checkIn.hora
-    });
-    if (url) {
-      window.open(url, '_blank', 'noopener,noreferrer');
-    } else {
-      handleAbrirPassagem(checkIn);
-    }
-  };
-
-  const handleAtualizarStatus = (id, patch) => {
-    const lista = storageUpdateCheckIn(id, patch);
-    setCheckIns(lista);
-  };
-
-  const handleRemoverPassagem = (id) => {
-    const lista = storageRemoveCheckIn(id);
-    setCheckIns(lista);
-    setTela('home');
-  };
-
-  // --- Render ---
-
-  if (tela === 'onboarding' || !perfil) {
-    return (
-      <Onboarding
-        perfilInicial={perfil}
-        onSalvar={handleSalvarPerfil}
-      />
-    );
-  }
-
-  return (
-    <>
-      <Home
-        perfil={perfil}
-        checkIns={checkIns}
-        loadingEventos={loadingEventos}
-        erroEventos={erroEventos}
-        onNovoCheckIn={() => setTela('checkin')}
-        onAbrirPassagem={handleAbrirPassagem}
-        onVerAmostras={handleVerAmostras}
-        onAbrirSettings={() => setTela('settings')}
-        onRecarregar={recarregarEventos}
-      />
-
-      {tela === 'checkin' && (
-        <CheckInModal
-          onFechar={() => setTela('home')}
-          onConfirmar={handleAdicionarCheckIn}
-        />
-      )}
-
-      {tela === 'passagem' && passagemSelecionada && (
-        <PassagemDetail
-          passagem={
-            checkIns.find((c) => c.id === passagemSelecionada.id) ||
-            passagemSelecionada
-          }
-          perfil={perfil}
-          onFechar={() => setTela('home')}
-          onRemover={handleRemoverPassagem}
-          onAtualizarStatus={handleAtualizarStatus}
-        />
-      )}
-
-      {tela === 'settings' && (
-        <Settings
-          perfil={perfil}
-          onFechar={() => setTela('home')}
-          onSalvar={(p) => {
-            setPerfil(p);
-            setTela('home');
-          }}
-        />
-      )}
-    </>
-  );
-}
+      // Por segurança:
