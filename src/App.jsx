@@ -20,7 +20,6 @@ import PassagemDetail from './components/PassagemDetail.jsx';
 import Settings from './components/Settings.jsx';
 
 export default function App() {
-  // Tela atual: 'onboarding' | 'home' | 'checkin' | 'passagem' | 'settings'
   const [tela, setTela] = useState('home');
   const [perfil, setPerfil] = useState(null);
   const [checkIns, setCheckIns] = useState([]);
@@ -29,7 +28,6 @@ export default function App() {
   const [erroEventos, setErroEventos] = useState(null);
   const [passagemSelecionada, setPassagemSelecionada] = useState(null);
 
-  // Carrega perfil + check-ins do localStorage no primeiro mount
   useEffect(() => {
     iniciarSessao();
     const p = getPerfil();
@@ -39,15 +37,12 @@ export default function App() {
     setTela(p ? 'home' : 'onboarding');
   }, []);
 
-  // Busca eventos da API toda vez que entra na home
   const recarregarEventos = useCallback(async () => {
     setLoadingEventos(true);
     setErroEventos(null);
     try {
       const evs = await fetchEventosPublicados({ page: 1, perPage: 20 });
       setEventos(evs);
-
-      // Recalcula status dos check-ins com a lista nova
       setCheckIns((prev) => {
         const atualizados = atualizarStatusCheckIns(prev, evs);
         saveCheckIns(atualizados);
@@ -66,8 +61,6 @@ export default function App() {
     }
   }, [tela, perfil, recarregarEventos]);
 
-  // --- Handlers ---
-
   const handleSalvarPerfil = (novoPerfil) => {
     setPerfil(novoPerfil);
     setTela('home');
@@ -83,7 +76,6 @@ export default function App() {
       criadoEm: new Date().toISOString()
     };
     const lista = storageAddCheckIn(novo);
-    // Roda matching imediatamente, caso o evento já esteja publicado
     const atualizados = atualizarStatusCheckIns(lista, eventos);
     saveCheckIns(atualizados);
     setCheckIns(atualizados);
@@ -96,8 +88,29 @@ export default function App() {
     setTela('passagem');
   };
 
-  // Atalho da seta verde na home: abre a galeria filtrada direto,
-  // pulando a tela de detalhe.
   const handleVerAmostras = (checkIn) => {
     if (checkIn.status !== 'pronto') {
-      // Por segurança:
+      handleAbrirPassagem(checkIn);
+      return;
+    }
+    const url = montarUrlSofoto({
+      localId: checkIn.localId,
+      data: checkIn.data,
+      perfil,
+      hora: checkIn.hora
+    });
+    if (url) {
+      track.viuAmostras(checkIn.localId);
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } else {
+      handleAbrirPassagem(checkIn);
+    }
+  };
+
+  const handleAtualizarStatus = (id, patch) => {
+    const lista = storageUpdateCheckIn(id, patch);
+    setCheckIns(lista);
+  };
+
+  const handleRemoverPassagem = (id) => {
+    const lista = storageRemoveCheckIn(id);
