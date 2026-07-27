@@ -94,7 +94,7 @@ export default function App() {
       return;
     }
     const url = montarUrlSofoto({
-      localId: checkIn.localId,
+      eventAddress: checkIn.eventAddress,
       data: checkIn.data,
       perfil,
       hora: checkIn.hora
