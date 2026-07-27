@@ -21,7 +21,7 @@ export default function PassagemDetail({
     () =>
       pronto
         ? montarUrlSofoto({
-            localId: passagem.localId,
+            eventAddress: passagem.eventAddress,
             data: passagem.data,
             perfil,
             hora: passagem.hora
