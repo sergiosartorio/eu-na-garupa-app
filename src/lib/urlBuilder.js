@@ -1,14 +1,14 @@
 // src/lib/urlBuilder.js
 //
-// Monta a URL da galeria do Só Foto.
-// Desde 24/06/2026 a galeria exige place + date (não mais event/slug).
+// Monta a URL da galeria do Só Foto usando o eventAddress EXATO do
+// evento (guardado no check-in pelo matching), porque o site só
+// reconhece o local se o place bater com o endereço real do evento.
+// Passando place+date corretos, o site completa event e cameras sozinho.
 
 import { resolverTags } from '../data/tags.js';
-import { getLocalById } from '../data/locais.js';
 
 const GALERIA_URL = 'https://sofoto.com.br/eunagarupa/galeria';
 
-// Converte 'YYYY-MM-DD' (interno) em 'DDMMAAAA' (formato da galeria)
 function dataParaDDMMAAAA(dataISO) {
   if (!dataISO) return null;
   const [y, m, d] = dataISO.split('-');
@@ -16,13 +16,12 @@ function dataParaDDMMAAAA(dataISO) {
   return `${d}${m}${y}`;
 }
 
-export function montarUrlSofoto({ localId, data, perfil, hora }) {
-  const local = getLocalById(localId);
+export function montarUrlSofoto({ eventAddress, data, perfil, hora }) {
   const date = dataParaDDMMAAAA(data);
-  if (!local || !date) return null;
+  if (!eventAddress || !date) return null;
 
   const url = new URL(GALERIA_URL);
-  url.searchParams.set('place', local.place);
+  url.searchParams.set('place', eventAddress);
   url.searchParams.set('date', date);
 
   const tags = resolverTags(perfil?.marca, perfil?.modelo);
@@ -32,19 +31,15 @@ export function montarUrlSofoto({ localId, data, perfil, hora }) {
 
   if (hora) url.searchParams.set('startTime', hora.padStart(5, '0'));
 
-  // Cor desativada por enquanto:
-  // if (perfil?.cor) url.searchParams.set('color', perfil.cor);
-
   return url.toString();
 }
 
-export function montarUrlAmpla({ localId, data }) {
-  const local = getLocalById(localId);
+export function montarUrlAmpla({ eventAddress, data }) {
   const date = dataParaDDMMAAAA(data);
-  if (!local || !date) return null;
+  if (!eventAddress || !date) return null;
 
   const url = new URL(GALERIA_URL);
-  url.searchParams.set('place', local.place);
+  url.searchParams.set('place', eventAddress);
   url.searchParams.set('date', date);
   return url.toString();
 }
