@@ -23,6 +23,37 @@ um botão que abre a galeria do Só Foto já filtrada pelos dados dele.
 Toda a compra continua acontecendo no Só Foto — este app não trata
 pagamento nem download.
 
+## Busca por foto (V3 — IA no celular)
+
+Na tela de uma passagem liberada, o botão **"Achar minhas fotos pela foto"** abre a busca:
+
+1. O cliente manda uma foto dele com a moto (ou procura nas fotos do horário do check-in).
+2. A IA roda **no próprio celular** (onnxruntime-web, arquivos em `public/busca/`, ~30 MB, baixados só por quem usa):
+   detector yolo11n + reID LMBN (128 dim.) + histogramas de cor. Nenhuma foto do cliente sai do aparelho.
+3. Compara com o **índice do evento** publicado pelo programa Biometria Motos (notebook) e mostra
+   "quem parece com você" (um cartão por pessoa+moto, usando os grupos do programa).
+4. O cliente marca "Sou eu", usa "Achar mais" e, em **Minhas fotos**, o botão abre o Só Foto só com as
+   fotos dele: `galeria?place=…&date=…&codes=8792,8793,…` (o `codes` é o número IMG_xxxx).
+
+As prévias mostradas são as do próprio Só Foto (`preview.sofoto.com.br`, com marca d'água).
+
+### Peças
+
+- `netlify/functions/busca.js` — guarda/serve os índices no **Netlify Blobs** (store `busca`, chave `AAAA-MM-DD_<localId>`).
+  O programa do notebook publica com `POST` + `Authorization: Bearer <PUBLICAR_CHAVE>`.
+- `netlify/functions/sofoto-fotos.js` — lista as fotos publicadas no Só Foto (nome → número e prévia).
+- `src/lib/buscaIA.js` — IA no aparelho e comparação (tem que ficar igual a `biometria/busca_indice.py`).
+- `src/components/BuscaFoto.jsx` — a tela.
+
+### Configurar (uma vez)
+
+1. Netlify → *Site configuration → Environment variables* → adicionar **`PUBLICAR_CHAVE`** com uma senha
+   longa qualquer (ex.: gere em um gerador de senhas). Redeploy.
+2. No programa Biometria Motos → aba **Busca do cliente** → *Configuração*: endereço do app
+   (ex.: `https://eu-na-garupa-app.netlify.app`) e a mesma chave.
+3. A cada evento: depois de publicar no Só Foto, no programa escolha o local e a data e toque em
+   **Publicar busca**.
+
 ## Stack
 
 - **React 18** + **Vite 5**

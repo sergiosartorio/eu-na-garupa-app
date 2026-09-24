@@ -10,7 +10,8 @@ export default function PassagemDetail({
   perfil,
   onFechar,
   onRemover,
-  onAtualizarStatus
+  onAtualizarStatus,
+  onBuscarPorFoto
 }) {
   const local = getLocalById(passagem.localId);
   const pronto = passagem.status === 'pronto';
@@ -149,6 +150,17 @@ export default function PassagemDetail({
             </div>
             <p className="text-xs text-asphalt-400 text-center px-4">
               Abre a galeria do Só Foto com seus filtros já aplicados.
+            </p>
+
+            <button
+              onClick={onBuscarPorFoto}
+              className="w-full mt-2 rounded-xl border border-signal/60 bg-signal/10 text-signal px-5 py-4 font-bold uppercase tracking-wider active:scale-[0.98]"
+              style={{ fontFamily: 'Bebas Neue, Impact, sans-serif', fontSize: '1.25rem', letterSpacing: '0.08em' }}
+            >
+              🔎 Achar minhas fotos pela foto
+            </button>
+            <p className="text-xs text-asphalt-400 text-center px-4">
+              Mande uma foto sua com a moto: a IA separa só as suas.
             </p>
 
             <div className="pt-3 grid grid-cols-2 gap-3">

@@ -64,5 +64,8 @@ export const track = {
     ev('checkin_feito', { local: localId || 'nao_informado' }),
   viuAmostras: (localId) =>
     ev('viu_amostras', { local: localId || 'nao_informado' }),
-  appInstalado: () => ev('app_instalado', { sistema: detectarSO() })
+  appInstalado: () => ev('app_instalado', { sistema: detectarSO() }),
+  buscaAberta: (localId) => ev('busca_aberta', { local: localId || 'nao_informado' }),
+  buscaFoto: (modo) => ev('busca_foto', { modo }),
+  buscaComprar: (n) => ev('busca_comprar', { fotos: n })
 };

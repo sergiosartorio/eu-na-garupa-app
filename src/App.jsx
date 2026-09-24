@@ -18,6 +18,7 @@ import Home from './components/Home.jsx';
 import CheckInModal from './components/CheckInModal.jsx';
 import PassagemDetail from './components/PassagemDetail.jsx';
 import Settings from './components/Settings.jsx';
+import BuscaFoto from './components/BuscaFoto.jsx';
 
 export default function App() {
   const [tela, setTela] = useState('home');
@@ -152,6 +153,20 @@ export default function App() {
           onFechar={() => setTela('home')}
           onRemover={handleRemoverPassagem}
           onAtualizarStatus={handleAtualizarStatus}
+          onBuscarPorFoto={() => {
+            track.buscaAberta(passagemSelecionada.localId);
+            setTela('busca');
+          }}
+        />
+      )}
+
+      {tela === 'busca' && passagemSelecionada && (
+        <BuscaFoto
+          passagem={
+            checkIns.find((c) => c.id === passagemSelecionada.id) ||
+            passagemSelecionada
+          }
+          onFechar={() => setTela('passagem')}
         />
       )}
 

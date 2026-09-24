@@ -43,3 +43,15 @@ export function montarUrlAmpla({ eventAddress, data }) {
   url.searchParams.set('date', date);
   return url.toString();
 }
+
+// Galeria do Só Foto só com as fotos escolhidas na busca por foto
+// (codes = número da foto, ex.: IMG_8780 → 8780).
+export function montarUrlCodigos({ eventAddress, data, codigos }) {
+  const date = dataParaDDMMAAAA(data);
+  if (!eventAddress || !date || !codigos?.length) return null;
+  const url = new URL(GALERIA_URL);
+  url.searchParams.set('place', eventAddress);
+  url.searchParams.set('date', date);
+  url.searchParams.set('codes', codigos.join(','));
+  return url.toString();
+}

@@ -38,8 +38,20 @@ export default defineConfig({
         ]
       },
       workbox: {
+        // a IA da busca (≈30 MB em public/busca) fica fora do pré-cache: só baixa quem usar a busca
+        globIgnores: ['**/busca/**'],
         // Não cacheia chamadas da Netlify Function — sempre busca rede
         runtimeCaching: [
+          {
+            urlPattern: /\/busca\/.*\.(onnx|wasm|mjs|js)$/i,
+            handler: 'CacheFirst',
+            options: { cacheName: 'busca-ia', expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 60 } }
+          },
+          {
+            urlPattern: /^https:\/\/preview\.sofoto\.com\.br\/.*/i,
+            handler: 'CacheFirst',
+            options: { cacheName: 'sofoto-previas', expiration: { maxEntries: 400, maxAgeSeconds: 60 * 60 * 24 * 14 } }
+          },
           {
             urlPattern: /\/.netlify\/functions\/.*/i,
             handler: 'NetworkFirst',
