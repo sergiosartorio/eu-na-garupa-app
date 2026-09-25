@@ -2,8 +2,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { getLocalById } from '../data/locais.js';
 import {
   carregarIndice, carregarFotosSofoto, analisarFoto, desenharPrevia,
-  pontuar, pessoas, maisParecidas, codigoDaFoto
+  pontuar, pessoas, maisParecidas, codigoDaFoto, confianca
 } from '../lib/buscaIA.js';
+import { getPerfil } from '../lib/storage.js';
 import { montarUrlCodigos } from '../lib/urlBuilder.js';
 import { track } from '../lib/analytics.js';
 
@@ -33,6 +34,7 @@ export default function BuscaFoto({ passagem, onFechar }) {
   const [marcadas, setMarcadas] = useState(() => new Set(lerMarcadas(passagem.id)));
   const [ampliada, setAmpliada] = useState(null);
   const [mostrar, setMostrar] = useState(12);
+  const perfil = useMemo(() => getPerfil(), []);   // moto cadastrada: ajuda a ordenar (marca/cor iguais sobem)
   const canvasRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -118,8 +120,8 @@ export default function BuscaFoto({ passagem, onFechar }) {
 
   const resultado = useMemo(() => {
     if (!D || !analise || estado !== 'resultado') return [];
-    return pessoas(D, pontuar(D, analise.subs[moto], janela, disponivel), disponivel);
-  }, [D, analise, moto, janela, disponivel, estado]);
+    return pessoas(D, pontuar(D, analise.subs[moto], janela, disponivel), disponivel, perfil);
+  }, [D, analise, moto, janela, disponivel, estado, perfil]);
 
   const doHorario = useMemo(() => {
     if (!D || estado !== 'horario') return [];
@@ -129,8 +131,8 @@ export default function BuscaFoto({ passagem, onFechar }) {
       if (janela && (D.minuto[i] < janela[0] || D.minuto[i] > janela[1])) continue;
       out.push(i);
     }
-    return pessoas(D, out.map((i) => [i, 1]), disponivel);
-  }, [D, estado, janela, disponivel]);
+    return pessoas(D, out.map((i) => [i, 1]), disponivel, perfil);
+  }, [D, estado, janela, disponivel, perfil]);
 
   const mais = useMemo(() => (D && estado === 'mais' ? maisParecidas(D, marcadasIdx, disponivel) : []), [D, estado, marcadasIdx, disponivel]);
 
@@ -201,7 +203,7 @@ export default function BuscaFoto({ passagem, onFechar }) {
           )}
           <Cabecalho titulo="QUEM PARECE COM VOCÊ" {...cab}
             texto='Cada cartão é uma pessoa com a moto. Toque em "Sou eu" no seu.' />
-          <ListaPessoas lista={resultado.slice(0, mostrar)} D={D} urlFoto={urlFoto} marcadas={marcadas} alterna={alterna} ampliar={setAmpliada} />
+          <ListaPessoas lista={resultado.slice(0, mostrar)} D={D} urlFoto={urlFoto} marcadas={marcadas} alterna={alterna} ampliar={setAmpliada} comNota />
           {resultado.length > mostrar && <button className="btn-secondary w-full" onClick={() => setMostrar(mostrar + 12)}>Mostrar mais</button>}
           {!resultado.length && <Aviso>Ninguém parecido nesse horário. Tente "o dia todo".</Aviso>}
           <button className="text-sm underline text-asphalt-300 w-full" onClick={() => inputRef.current?.click()}>Usar outra foto</button>
@@ -300,7 +302,21 @@ function Cabecalho({ titulo, texto, diaTodo, setDiaTodo, hora, horaEscolhida, se
   );
 }
 
-function ListaPessoas({ lista, D, urlFoto, marcadas, alterna, ampliar }) {
+function Selos({ u, comNota }) {
+  const c = u.compat, selos = [];
+  if (comNota) selos.push([confianca(u.p), u.p >= 0.8 ? 'bg-liberated/20 text-liberated-light' : 'bg-asphalt-700 text-asphalt-200']);
+  if (c?.marca === true) selos.push([c.cor === true ? '✓ Igual à sua moto' : '✓ Mesma marca da sua', 'bg-liberated/20 text-liberated-light']);
+  else if (c?.marca === false) selos.push(['Outra marca', 'bg-asphalt-700 text-asphalt-400']);
+  else if (c?.cor === true) selos.push(['✓ Mesma cor da sua', 'bg-liberated/20 text-liberated-light']);
+  if (!selos.length) return null;
+  return (
+    <div className="flex gap-1 flex-wrap mt-1">
+      {selos.map(([t, cls]) => <span key={t} className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${cls}`}>{t}</span>)}
+    </div>
+  );
+}
+
+function ListaPessoas({ lista, D, urlFoto, marcadas, alterna, ampliar, comNota }) {
   return (
     <div className="space-y-3">
       {lista.map((u) => {
@@ -319,6 +335,7 @@ function ListaPessoas({ lista, D, urlFoto, marcadas, alterna, ampliar }) {
               <div className="min-w-0">
                 <p className="font-mono text-sm">{D.fotos[u.fotos[0]][1].slice(0, 5)} · {u.fotos.length} foto{u.fotos.length > 1 ? 's' : ''}</p>
                 {u.rotulo && <p className="text-xs text-asphalt-300 truncate">{u.rotulo}</p>}
+                <Selos u={u} comNota={comNota} />
               </div>
               <button onClick={() => alterna(nomes, !sou)} className={sou ? 'badge badge-pronto !py-2 !px-4' : 'btn-primary !text-base !py-2 !px-4'}>
                 {sou ? 'Sou eu ✓' : 'Sou eu'}

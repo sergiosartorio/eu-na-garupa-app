@@ -199,17 +199,51 @@ export function pontuar(D, q, janela, disponivel) {
   return res.sort((a, b) => b[1] - a[1]);
 }
 
-/** Junta as fotos em "pessoas" (grupos do programa); cada cartão = uma moto + piloto. */
-export function pessoas(D, res, disponivel) {
+// ---------------------------------------------------------------- moto cadastrada × tags do evento
+const norm = (s) => (s || '').toString().trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+const MARCA_IGUAL = { vw: 'volkswagen', 'harley davidson': 'harley-davidson', harley: 'harley-davidson' };
+const marcaN = (s) => MARCA_IGUAL[norm(s)] || norm(s);
+// cores que a IA e o cliente costumam confundir: não contam como diferentes
+const COR_VIZINHA = { prata: ['cinza', 'branca'], cinza: ['prata', 'preta'], vermelha: ['vinho', 'laranja'], vinho: ['vermelha'], laranja: ['vermelha', 'amarela'], amarela: ['laranja', 'dourada'], marrom: ['bege', 'vinho'] };
+
+/** Compara a moto do grupo g (tags do evento, índice versão 2) com a moto que o cliente cadastrou no app.
+ *  marca/cor: true = igual, false = diferente, undefined = não dá para saber. conf: 2 corrigida, 1 pronta, 0 conferir. */
+export function compatibilidade(D, g, perfil) {
+  const t = D.tags?.[g];
+  if (!t || !perfil) return null;
+  const [marca, cor, conf] = t, r = { conf };
+  if (marca && perfil.marca && norm(perfil.marca) !== 'outras') r.marca = marcaN(marca) === marcaN(perfil.marca);
+  if (cor && perfil.cor && perfil.cor !== 'outra') {
+    const cores = norm(cor).split(/\s+e\s+|,|\//).map((s) => s.trim()).filter(Boolean), minha = norm(perfil.cor);
+    if (cores.includes(minha)) r.cor = true;
+    else if (!cores.some((c) => (COR_VIZINHA[minha] || []).includes(c))) r.cor = false;
+  }
+  return r;
+}
+function ajuste(c) {
+  if (!c) return 0;
+  let a = 0;
+  if (c.marca === true) a += 0.15; else if (c.marca === false) a -= 0.25;
+  if (c.cor === true) a += 0.08; else if (c.cor === false) a -= 0.08;
+  return a * (c.conf >= 1 ? 1 : 0.5);   // tag ainda "para conferir" pesa metade
+}
+/** Texto da confiança da IA para o cartão. */
+export const confianca = (p) => (p >= 0.8 ? 'Muito parecida' : p >= 0.5 ? 'Parecida' : 'Pode ser');
+
+/** Junta as fotos em "pessoas" (grupos do programa); cada cartão = uma moto + piloto.
+ *  Com o perfil do cliente, quem tem a mesma marca/cor da moto cadastrada sobe na lista (e marca diferente desce). */
+export function pessoas(D, res, disponivel, perfil) {
   const vistos = new Map();
   for (const [i, p] of res) {
-    const k = D.gruposDe[i].length ? 'g' + D.gruposDe[i][0] : 'f' + i;
+    const g = D.gruposDe[i].length ? D.gruposDe[i][0] : null;
+    const k = g != null ? 'g' + g : 'f' + i;
     if (vistos.has(k)) continue;
-    const fotos = D.gruposDe[i].length ? [i, ...D.grupos[D.gruposDe[i][0]].filter((x) => x !== i)] : [i];
+    const fotos = g != null ? [i, ...D.grupos[g].filter((x) => x !== i)] : [i];
     const vis = fotos.filter((x) => !disponivel || disponivel[x]);
-    if (vis.length) vistos.set(k, { chave: k, p, fotos: vis, rotulo: D.gruposDe[i].length ? D.rotulos?.[D.gruposDe[i][0]] || '' : '' });
+    const compat = g != null ? compatibilidade(D, g, perfil) : null;
+    if (vis.length) vistos.set(k, { chave: k, p, ordem: p + ajuste(compat), compat, fotos: vis, rotulo: g != null ? D.rotulos?.[g] || '' : '' });
   }
-  return [...vistos.values()];
+  return [...vistos.values()].sort((a, b) => b.ordem - a.ordem);
 }
 
 /** Depois que o cliente marcou fotos suas: grupo delas + fotos parecidas com qualquer uma delas. */
