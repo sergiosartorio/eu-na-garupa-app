@@ -18,6 +18,9 @@ function salvarMarcadas(id, nomes) {
 }
 
 export default function BuscaFoto({ passagem, onFechar }) {
+  // entrada pelo link público (vindo do Só Foto): não há check-in, o cliente escolhe o horário
+  const [horaEscolhida, setHoraEscolhida] = useState('');
+  const horaRef = passagem.hora || horaEscolhida;
   const local = getLocalById(passagem.localId);
   const [D, setD] = useState(null);
   const [sofoto, setSofoto] = useState({});
@@ -80,9 +83,20 @@ export default function BuscaFoto({ passagem, onFechar }) {
 
   // janela de horário a partir do check-in: a foto é tirada ANTES do "acabei de passar"
   const janela = useMemo(() => {
-    const m = minutos(passagem.hora);
-    return diaTodo || m == null ? null : [m - 50, m + 15];
-  }, [passagem.hora, diaTodo]);
+    const m = minutos(horaRef);
+    if (diaTodo || m == null) return null;
+    // check-in: a foto foi tirada ANTES do "acabei de passar"; hora escolhida: ±30 min
+    return passagem.hora ? [m - 50, m + 15] : [m - 30, m + 30];
+  }, [horaRef, passagem.hora, diaTodo]);
+  const horas = useMemo(() => {
+    if (!D) return [];
+    const ms = D.minuto.filter(Number.isFinite);
+    const ini = Math.floor(Math.min(...ms) / 15) * 15, fim = Math.max(...ms);
+    const out = [];
+    for (let m = ini; m <= fim; m += 15) out.push(`${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`);
+    return out;
+  }, [D]);
+  const cab = { diaTodo, setDiaTodo, hora: passagem.hora, horaEscolhida, setHoraEscolhida, horas };
 
   // ---------- foto do celular
   async function escolherArquivo(e) {
@@ -148,6 +162,16 @@ export default function BuscaFoto({ passagem, onFechar }) {
             A IA compara com as {D.N} fotos do evento, aqui no seu celular. Nenhuma foto sua é enviada.
           </p>
           {erro && <p className="text-sm text-brake-light">{erro}</p>}
+          {!passagem.hora && (
+            <label className="block text-sm text-asphalt-200">
+              Que horas você passou pelo fotógrafo? <span className="text-asphalt-400">(ajuda muito)</span>
+              <select value={horaEscolhida} onChange={(e) => { setHoraEscolhida(e.target.value); setDiaTodo(!e.target.value); }}
+                className="mt-1 w-full bg-asphalt-800 border border-asphalt-600 rounded-xl px-3 py-3 text-asphalt-50">
+                <option value="">Não sei</option>
+                {horas.map((h) => <option key={h} value={h}>por volta das {h}</option>)}
+              </select>
+            </label>
+          )}
           <button className="btn-primary w-full py-6" onClick={() => inputRef.current?.click()}>📷 USAR UMA FOTO SUA</button>
           <p className="text-xs text-asphalt-400 text-center -mt-2">Uma foto sua com a moto, de frente ou de lado. Pode ser de outro dia.</p>
           <button className="btn-secondary w-full py-4" onClick={() => { setMostrar(12); setEstado('horario'); }}>🔎 Procurar nas fotos do meu horário</button>
@@ -175,7 +199,7 @@ export default function BuscaFoto({ passagem, onFechar }) {
               ))}
             </div>
           )}
-          <Cabecalho titulo="QUEM PARECE COM VOCÊ" diaTodo={diaTodo} setDiaTodo={setDiaTodo} hora={passagem.hora}
+          <Cabecalho titulo="QUEM PARECE COM VOCÊ" {...cab}
             texto='Cada cartão é uma pessoa com a moto. Toque em "Sou eu" no seu.' />
           <ListaPessoas lista={resultado.slice(0, mostrar)} D={D} urlFoto={urlFoto} marcadas={marcadas} alterna={alterna} ampliar={setAmpliada} />
           {resultado.length > mostrar && <button className="btn-secondary w-full" onClick={() => setMostrar(mostrar + 12)}>Mostrar mais</button>}
@@ -186,7 +210,7 @@ export default function BuscaFoto({ passagem, onFechar }) {
 
       {estado === 'horario' && (
         <div className="space-y-4 animate-fade-in">
-          <Cabecalho titulo="FOTOS DO SEU HORÁRIO" diaTodo={diaTodo} setDiaTodo={setDiaTodo} hora={passagem.hora}
+          <Cabecalho titulo="FOTOS DO SEU HORÁRIO" {...cab}
             texto='Ache a sua e toque em "Sou eu". Depois use "Achar mais".' />
           <ListaPessoas lista={doHorario.slice(0, mostrar)} D={D} urlFoto={urlFoto} marcadas={marcadas} alterna={alterna} ampliar={setAmpliada} />
           {doHorario.length > mostrar && <button className="btn-secondary w-full" onClick={() => setMostrar(mostrar + 12)}>Mostrar mais</button>}
@@ -248,11 +272,24 @@ function Aviso({ titulo, children }) {
   );
 }
 
-function Cabecalho({ titulo, texto, diaTodo, setDiaTodo, hora }) {
+function Cabecalho({ titulo, texto, diaTodo, setDiaTodo, hora, horaEscolhida, setHoraEscolhida, horas }) {
   return (
     <div>
       <h2 className="text-3xl">{titulo}</h2>
       <p className="text-sm text-asphalt-300">{texto}</p>
+      {!hora && (
+        <label className="flex items-center gap-2 mt-3 text-sm text-asphalt-200">
+          Que horas você passou?
+          <select
+            value={diaTodo ? '' : horaEscolhida}
+            onChange={(e) => { setHoraEscolhida(e.target.value); setDiaTodo(!e.target.value); }}
+            className="bg-asphalt-800 border border-asphalt-600 rounded-lg px-2 py-1 text-asphalt-50"
+          >
+            <option value="">Não sei (o dia todo)</option>
+            {horas.map((h) => <option key={h} value={h}>por volta das {h}</option>)}
+          </select>
+        </label>
+      )}
       {hora && (
         <div className="flex gap-2 mt-3">
           <button className={`badge ${!diaTodo ? 'bg-signal text-asphalt-900' : 'bg-asphalt-700 text-asphalt-100'}`} onClick={() => setDiaTodo(false)}>Perto das {hora}</button>
