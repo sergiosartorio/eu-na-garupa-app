@@ -62,9 +62,13 @@ export default async (req) => {
     }
 
     if (req.method === 'POST') {
-      const chave = process.env.PUBLICAR_CHAVE || Netlify.env.get('PUBLICAR_CHAVE');
-      const auth = req.headers.get('authorization') || '';
-      if (!chave || auth !== `Bearer ${chave}`) return json({ erro: 'chave de publicação inválida' }, 401);
+      // espaços/quebras de linha colados junto com a chave (no painel ou no programa) não contam
+      const chave = (process.env.PUBLICAR_CHAVE || Netlify.env.get('PUBLICAR_CHAVE') || '').trim();
+      const enviada = (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '').trim();
+      if (!chave)
+        return json({ erro: 'o site ainda não tem a PUBLICAR_CHAVE: crie a variável na Netlify (escopo Functions) e faça um novo deploy' }, 401);
+      if (enviada !== chave)
+        return json({ erro: 'chave diferente da PUBLICAR_CHAVE do site: cole de novo a mesma chave no programa' }, 401);
       const corpo = await req.text();
       let d;
       try { d = JSON.parse(corpo); } catch { return json({ erro: 'JSON inválido' }, 400); }
