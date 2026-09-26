@@ -184,12 +184,15 @@ function sujeitoDoIndice(D, k) {
 
 /** Probabilidade de cada foto do evento ser da mesma pessoa+moto que q. janela = [min, max] em minutos do dia. */
 export function pontuar(D, q, janela, disponivel) {
-  const cf = D.coef, b0 = D.b, best = new Float32Array(D.N);
+  // amostra só da moto (sem piloto): pesos próprios, treinados para esse caso (índice novo; o antigo não tem)
+  const soMoto = !q.r_rider && D.coef_sp;
+  const cf = soMoto ? D.coef_sp : D.coef, b0 = soMoto ? D.b_sp : D.b, best = new Float32Array(D.N);
   const cosR = (qv, k) => { if (!qv || k < 0) return null; let s = 0; const o = k * 128; for (let j = 0; j < 128; j++) s += qv[j] * D.Ri8[o + j]; return s / 127; };
   const inter = (qh, k) => { if (!qh || k < 0) return null; let s = 0; const o = k * 192; for (let j = 0; j < 192; j++) { const g = D.H16[o + j] / 65535; s += qh[j] < g ? qh[j] : g; } return s; };
   for (const [fi, car, nr, rr, rf, hh, ht, hr, hm] of D.subs) {
     if (disponivel && !disponivel[fi]) continue;
     if (janela && (D.minuto[fi] < janela[0] || D.minuto[fi] > janela[1])) continue;
+    if ((q.car ? 1 : 0) !== car) continue;   // moto nunca casa com carro (e vice-versa)
     const xs = [cosR(q.r_rider, rr), cosR(q.r_full, rf), inter(q.h_helmet, hh), inter(q.h_torso, ht), inter(q.h_rider, hr), inter(q.h_moto, hm)];
     let z = b0; xs.forEach((x, k) => { z += cf[2 * k] * (x == null ? 0 : x) + cf[2 * k + 1] * (x == null ? 1 : 0); });
     z += cf[12] * (q.nr === nr ? 1 : 0) + cf[13] * ((q.car ? 1 : 0) !== car ? 1 : 0);
